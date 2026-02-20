@@ -1,0 +1,10 @@
+openai
+pydantic-settings
+soundfile
+librosa
+numpy
+azure-storage-queue
+aiohttp
+azure-storage-blob>=12.27.0
+azure-data-tables
+psutil

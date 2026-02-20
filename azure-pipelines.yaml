@@ -1,0 +1,75 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  acrName: 'unitecareacr'
+  resourceGroup: 'UniteCareRG'
+
+  # Images
+  webImage: 'web'
+  workerImage: 'worker'
+
+  # Container App names
+  webApp: 'unitecare-web'
+  workerApp: 'unitecare-worker'
+
+steps:
+
+# 1. Login to Azure
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'YOUR-SERVICE-CONNECTION'
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      echo "🔐 Logging in to Azure..."
+      az acr login --name $acrName
+
+
+- script: |
+      echo "🚧 Building Web image..."
+      docker build -f Dockerfile.web -t $acrName.azurecr.io/$webImage:latest .
+  displayName: Build Web Image
+
+
+
+- script: |
+      echo "🚧 Building Worker image..."
+      docker build -f Dockerfile.worker -t $acrName.azurecr.io/$workerImage:latest .
+  displayName: Build Worker Image
+
+
+
+- script: |
+      echo "📤 Pushing Web image..."
+      docker push $acrName.azurecr.io/$webImage:latest
+      
+      echo "📤 Pushing Worker image..."
+      docker push $acrName.azurecr.io/$workerImage:latest
+  displayName: Push Images to ACR
+
+
+
+- task: AzureCLI@2
+  displayName: Deploy Web & Worker
+  inputs:
+    azureSubscription: 'YOUR-SERVICE-CONNECTION'
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      echo "🚀 Updating Web container app..."
+      az containerapp update \
+        --name $webApp \
+        --resource-group $resourceGroup \
+        --image $acrName.azurecr.io/$webImage:latest
+      
+      echo "🚀 Updating Worker container app..."
+      az containerapp update \
+        --name $workerApp \
+        --resource-group $resourceGroup \
+        --image $acrName.azurecr.io/$workerImage:latest

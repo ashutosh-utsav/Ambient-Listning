@@ -1,0 +1,33 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+.vscode/
+
+# Virtual environments
+.venv
+.env
+uploads/
+.venv-linux
+
+web_server.zip
+
+
+# Azurite local storage files
+__azurite_db_*.json
+__azurite_db_*.json~
+.azurite-debug.log
+.azurite-debug.log-err
+.azurite-debug.log-out
+
+AzuriteConfig
+
+__blobstorage__
+__queuestorage__
+.vscode/
+app.log
+text.txt

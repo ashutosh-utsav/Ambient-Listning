@@ -1,0 +1,36 @@
+# Stage 1: The "Builder" - where we install dependencies
+FROM python:3.11-slim AS builder
+
+# Install uv
+RUN pip install uv
+
+# Create a virtual environment
+RUN uv venv /opt/venv
+
+# Copy requirements and install dependencies into the venv
+COPY requirements-web.txt .
+RUN . /opt/venv/bin/activate && uv pip install --no-cache-dir -r requirements-web.txt
+
+
+# Stage 2: The "Final" image - lean and contains only what's needed
+FROM python:3.11-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the virtual environment from the builder stage
+COPY --from=builder /opt/venv /opt/venv
+
+# Copy the application code
+COPY ./core ./core
+COPY ./web_server ./web_server
+COPY ./static ./static
+
+# Activate the virtual environment for subsequent commands
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Expose the port the app runs on
+EXPOSE 8000
+
+# Define the command to run your app
+CMD ["uvicorn", "web_server.main:app", "--host", "0.0.0.0", "--port", "8000"]

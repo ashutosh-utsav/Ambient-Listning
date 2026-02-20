@@ -1,0 +1,39 @@
+# Stage 1: The "Builder"
+FROM python:3.11-slim AS builder
+
+RUN pip install uv
+
+# COMMENT: Nuke any of uv's own internal caches
+RUN uv cache clean
+
+RUN uv venv /opt/venv
+COPY requirements-worker.txt .
+
+# COMMENT: We add uv's own --no-cache flag and a debug line
+RUN . /opt/venv/bin/activate && \
+    echo "--- RUNNING UV PIP INSTALL ---" && \
+    uv pip install --no-cache -r requirements-worker.txt && \
+    echo "--- UV PIP LIST (to verify) ---" && \
+    uv pip list | grep azure
+
+
+# Stage 2: The "Final" image
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy the virtual environment from the builder stage
+COPY --from=builder /opt/venv /opt/venv
+
+# Copy the application code
+COPY ./core ./core
+COPY ./worker ./worker
+
+# Create the necessary directories inside the container instead of copying them.
+RUN mkdir -p /app/uploads/audio /app/uploads/temp
+
+# Activate the virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Define the command to run your app
+CMD ["python", "-m", "worker.main"]

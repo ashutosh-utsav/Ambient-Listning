@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic-settings
+azure-storage-queue
+aiohttp
+azure-identity
+azure-storage-blob
+azure-data-tables
+openai
+python-jose
