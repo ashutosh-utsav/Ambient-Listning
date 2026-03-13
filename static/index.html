@@ -39,7 +39,7 @@
         <button id="resumeBtn" disabled>Resume</button>
         <button id="stopBtn" disabled>Stop Recording</button>
 
-        <!-- ✅ NEW BUTTON -->
+
         <button id="closeWithoutEndBtn" disabled>Close Without End</button>
 
         <div id="status">Idle</div>
@@ -75,6 +75,11 @@
     </div>
 
     <script>
+
+        const liveClinicId = document.getElementById("liveClinicId");
+        
+        const livePatientPin = document.getElementById("livePatientPin");
+
         const startBtn = document.getElementById("startBtn");
         const pauseBtn = document.getElementById("pauseBtn");
         const resumeBtn = document.getElementById("resumeBtn");

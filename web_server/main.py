@@ -73,7 +73,7 @@ app.add_middleware(
     allow_headers=["*"],  
 )
 
-app.add_middleware(JWTMiddleware)
+# app.add_middleware(JWTMiddleware)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

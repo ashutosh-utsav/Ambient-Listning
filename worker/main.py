@@ -147,7 +147,7 @@ class Worker:
         gc.collect()
         logger.info("Shutdown complete.")
 
-    # -------- NEW: Report errors back to the web server so it can notify WS ----------
+
     async def report_error(self, session_id: str | None, code: str, message: str):
         """
         Sends an error event to the web_server which will forward to the websocket client.
