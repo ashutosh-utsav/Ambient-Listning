@@ -7,11 +7,17 @@ from worker.utils import log_memory_usage
 
 logger = logging.getLogger(__name__)
 
+
 class SessionManager:
-    def __init__(self, blob_service_client, table_service_client, error_reporter):
+    def __init__(
+        self,
+        s3_client,          # was: blob_service_client: BlobServiceClient
+        dynamodb_table,     # was: table_service_client: TableServiceClient
+        error_reporter,
+    ):
         self.session_processors = {}
-        self.blob_service_client = blob_service_client
-        self.table_service_client = table_service_client
+        self.s3_client = s3_client
+        self.dynamodb_table = dynamodb_table
         self.error_reporter = error_reporter
         self.janitor_task = None
         self.memory_logger_task = None
@@ -24,8 +30,8 @@ class SessionManager:
                 session_id=session_id,
                 clinic_id=task.clinic_id,
                 patient_pin=task.patient_pin,
-                blob_service_client=self.blob_service_client,
-                table_service_client=self.table_service_client,
+                s3_client=self.s3_client,           # was: blob_service_client=
+                dynamodb_table=self.dynamodb_table, # was: table_service_client=
                 error_reporter=self.error_reporter,
                 ref_ids=task.ref_ids or [],
             )
@@ -52,7 +58,6 @@ class SessionManager:
         while True:
             try:
                 await asyncio.sleep(10)
-                # log_memory_usage("Periodic Check")
             except asyncio.CancelledError:
                 logger.info("Memory logger task cancelled.")
                 raise
@@ -69,7 +74,9 @@ class SessionManager:
                 for session_id, proc in list(self.session_processors.items()):
                     idle_minutes = (now - proc.last_updated_time).total_seconds() / 60
                     if idle_minutes > 30:
-                        logger.warning(f"[{session_id}] Session is stale (inactive for {idle_minutes:.1f} minutes). Marking for cleanup.")
+                        logger.warning(
+                            f"[{session_id}] Session is stale (inactive for {idle_minutes:.1f} minutes). Marking for cleanup."
+                        )
                         stale_sessions.append(session_id)
 
                 if stale_sessions:
@@ -110,7 +117,7 @@ class SessionManager:
                 logger.info("Memory logger task stopped.")
             finally:
                 self.memory_logger_task = None
-    
+
     async def cleanup_all_sessions(self):
         logger.info(f"Cleaning up all {len(self.session_processors)} active sessions...")
         session_ids = list(self.session_processors.keys())
