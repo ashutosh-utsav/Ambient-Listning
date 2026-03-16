@@ -2,10 +2,14 @@ fastapi
 uvicorn[standard]
 python-multipart
 pydantic-settings
-azure-storage-queue
 aiohttp
-azure-identity
-azure-storage-blob
-azure-data-tables
 openai
-python-jose
+aioboto3
+arq
+
+# -- OLD Azure packages (replaced by aioboto3 + arq) --
+# azure-storage-queue
+# azure-identity
+# azure-storage-blob
+# azure-data-tables
+# python-jose

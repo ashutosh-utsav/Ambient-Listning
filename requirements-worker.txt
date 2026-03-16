@@ -1,10 +1,20 @@
 openai
 pydantic-settings
 soundfile
-librosa
 numpy
-azure-storage-queue
 aiohttp
-azure-storage-blob>=12.27.0
-azure-data-tables
+aioboto3
+arq
 psutil
+
+# -- OLD Azure packages (replaced by aioboto3 + arq) --
+# azure-storage-queue
+# azure-storage-blob>=12.27.0
+# azure-data-tables
+
+# -- Removed: VAD was never implemented (ENABLE_VAD=False) --
+# -- Dropping these saves ~2GB from the Docker image --
+# librosa
+# torch
+# torchaudio
+# onnxruntime
