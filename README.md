@@ -1,46 +1,72 @@
-# How to run the app 
-- Create a virtual env - and activate that env
-```bash 
-python -m venv .venv
-``` 
-- Install all the dependecy fron ```req.txt```
+# How to run the app
+
+## Prerequisites
+- [uv](https://docs.astral.sh/uv/) — `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Docker + Docker Compose
+
+---
+
+## Local development
+
+### 1. Environment
 ```bash
-pip install -r req.txt
-```
-- Make sure the redis server is running 
-1. In one terminal start the worker/main.py
-```bssh
-python -m worker.main 
+cp .env.example .env
+# fill in OPENAI_API_KEY in .env — everything else is pre-filled for local dev
 ```
 
-2. On secound terminal run web_server/main.py
+### 2. Fix uploads directory (first time only)
 ```bash
-uvicorn web_server.main:app --reload
+sudo mkdir -p uploads/temp && sudo chown -R $USER uploads/
 ```
 
-3. start azure 
+### 3. Install dependencies
 ```bash
-azurite --location . --debug .azurite-debug.log / azurite --location c:\azurite   
+uv sync
 ```
 
-4. ngrok
+### 4. Start local infrastructure (MinIO + DynamoDB Local + Redis)
 ```bash
-ngrok http 8000
+docker-compose -f docker-compose.dev.yml up -d
 ```
-5. Docker 
+This starts:
+- **MinIO** (S3 emulator) — API on `localhost:9000`, console on `localhost:9001` (`minioadmin` / `minioadmin`)
+- **DynamoDB Local** — `localhost:8001`
+- **Redis** — `localhost:6379`
+
+The `minio-init` and `dynamodb-init` containers run once to create the `recordings` bucket and `sessionIndex` table, then exit.
+
+### 5. Run the web server (terminal 1)
 ```bash
-docker-compose up --build
+uv run uvicorn web_server.main:app --reload --port 8000
 ```
 
+### 6. Run the worker (terminal 2)
+```bash
+uv run python -m worker.main
+```
 
-docker build --no-cache -f Dockerfile.web -t unitecareacr.azurecr.io/web:latest .   
+### 7. Verify
+```bash
+curl http://localhost:8000/health/detailed
+# {"status":"healthy","services":{"redis":"healthy","s3":"healthy"}}
+```
 
-docker build --no-cache -f Dockerfile.worker -t unitecareacr.azurecr.io/worker:latest .
-  
-az acr login --name unitecareacr
+### Teardown
+```bash
+docker-compose -f docker-compose.dev.yml down       # stop services
+docker-compose -f docker-compose.dev.yml down -v    # stop + wipe volumes (fresh start)
+```
 
-docker push unitecareacr.azurecr.io/web:latest     
-docker push unitecareacr.azurecr.io/worker:latest  
+---
+
+## Adding / updating dependencies
+```bash
+uv add <package>          # add a new dep
+uv remove <package>       # remove a dep
+uv sync                   # sync venv to lockfile (run after pulling changes)
+```
+
+---
 
 
 # Proper Documantation of the app 
