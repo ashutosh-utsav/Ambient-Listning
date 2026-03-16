@@ -59,6 +59,86 @@ docker-compose -f docker-compose.dev.yml down -v    # stop + wipe volumes (fresh
 
 ---
 
+## Production infrastructure (OpenTofu / HCL)
+
+Local dev uses Docker containers as stand-ins. For a real deployment, provision
+the AWS resources with [OpenTofu](https://opentofu.org) (open-source Terraform fork).
+All resources that are manually initialised by `minio-init` / `dynamodb-init` in
+dev should be declared as code — no init containers in prod.
+
+### Resources to declare
+
+| Resource | HCL block | Notes |
+|---|---|---|
+| S3 bucket | `resource "aws_s3_bucket" "recordings"` | Enable versioning + lifecycle rules to expire old audio chunks |
+| DynamoDB table | `resource "aws_dynamodb_table" "session_index"` | `hash_key = "session_id"`, `billing_mode = "PAY_PER_REQUEST"`, add TTL on a `ttl` attribute to auto-expire old sessions |
+| ElastiCache Redis | `resource "aws_elasticache_cluster" "queue"` | `node_type = "cache.t4g.micro"`, `engine = "redis"` |
+| EC2 (web + worker) | `resource "aws_instance" "psychdesk"` | `instance_type = "t4g.small"` (ARM), run both processes via systemd or Docker Compose |
+| ECR repositories | `resource "aws_ecr_repository"` | One each for `psychdesk-web` and `psychdesk-worker` |
+| Security groups | `resource "aws_security_group"` | EC2 → ElastiCache on 6379, EC2 → DynamoDB/S3 via VPC endpoint |
+| IAM role | `resource "aws_iam_role"` | Attach `AmazonS3FullAccess` + `AmazonDynamoDBFullAccess` scoped to the bucket/table ARNs only |
+
+### Suggested file layout
+
+```
+infra/
+  main.tf          # provider config (aws, region)
+  variables.tf     # env, region, instance type, bucket name etc.
+  outputs.tf       # EC2 IP, Redis endpoint, ECR URLs
+  s3.tf            # S3 bucket + lifecycle policy
+  dynamodb.tf      # sessionIndex table + TTL
+  elasticache.tf   # Redis cluster + subnet group
+  ec2.tf           # instance, key pair, user_data bootstrap script
+  ecr.tf           # container registries
+  iam.tf           # instance role + policy
+  vpc.tf           # VPC, subnets, security groups (if not using default VPC)
+```
+
+### Key DynamoDB table definition
+
+```hcl
+resource "aws_dynamodb_table" "session_index" {
+  name         = "sessionIndex"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "session_id"
+
+  attribute {
+    name = "session_id"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "expires_at"   # set this in app code (unix timestamp, e.g. now + 7 days)
+    enabled        = true
+  }
+
+  tags = {
+    Project = "psychdesk"
+  }
+}
+```
+
+### Quick start
+
+```bash
+cd infra/
+tofu init
+tofu plan
+tofu apply
+```
+
+After `apply`, drop the outputs into `.env`:
+```
+AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY  ← from IAM role / CI secret
+S3_BUCKET_NAME                             ← from tofu output
+DYNAMODB_TABLE_NAME                        ← sessionIndex (static)
+REDIS_URL                                  ← redis://<elasticache_endpoint>:6379
+S3_ENDPOINT_URL                            ← (remove — use real AWS)
+DYNAMODB_ENDPOINT_URL                      ← (remove — use real AWS)
+```
+
+---
+
 ## Adding / updating dependencies
 ```bash
 uv add <package>          # add a new dep
