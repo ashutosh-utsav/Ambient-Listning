@@ -25,11 +25,6 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
-    # Resource cap matches ElastiCache cache.t4g.micro for realistic load testing
-    deploy:
-      resources:
-        limits:
-          memory: 512m
 
   # Creates the S3 bucket once on first run, then exits.
   # Subsystems write their own key prefixes (audio/, transcripts/) — no pre-creation needed.
@@ -76,11 +71,12 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    # Resource cap matches ElastiCache cache.t4g.micro (0.5 GB)
+    # Resource caps match ElastiCache cache.t4g.micro: 0.5 GB RAM, 2 vCPUs
     deploy:
       resources:
         limits:
           memory: 512m
+          cpus: "2"
 
 volumes:
   minio_data:
