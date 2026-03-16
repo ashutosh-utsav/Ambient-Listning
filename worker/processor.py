@@ -152,6 +152,7 @@ class SessionProcessor:
                     Bucket=settings.s3_bucket_name,
                     Key=wav_key,
                     Body=wav_bytes,
+                    ContentType="audio/wav",
                 )
                 # -- OLD Azure blob upload --
                 # container_client = self.blob_service_client.get_container_client(settings.azure_blob_container_name)

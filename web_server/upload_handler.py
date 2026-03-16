@@ -58,6 +58,7 @@ async def transcribe_and_summarize_file(file_path: str, clinic_id: str, patient_
                         Bucket=settings.s3_bucket_name,
                         Key=audio_s3_key,
                         Body=data.read(),
+                        ContentType="audio/wav",
                     )
                 logger.info(f"Successfully uploaded audio to: {audio_s3_key}")
 
