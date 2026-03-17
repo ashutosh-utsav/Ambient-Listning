@@ -60,7 +60,7 @@ services:
     image: amazon/dynamodb-local:latest
     container_name: psychdesk-dynamodb
     ports:
-      - "8001:8000"
+      - "8005:8000"
     command: -jar DynamoDBLocal.jar -sharedDb -inMemory
 
   redis:
