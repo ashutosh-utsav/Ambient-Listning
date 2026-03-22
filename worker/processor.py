@@ -32,6 +32,7 @@ import random
 
 from core.models import TranscriptionTask
 from core.fallback_utils import build_combined_text
+from core.kb_service import index_session_and_update_brief
 
 settings = get_settings()
 client = openai.AsyncOpenAI(api_key=settings.openai_api_key)
@@ -294,6 +295,21 @@ class SessionProcessor:
                     "ErrorCode": "",
                     "ErrorMessage": "",
                 })
+
+                # -- Knowledge Base: index session + update progressive brief --
+                summary_raw = final_transcript.get("summary", {})
+                summary_for_kb = summary_raw if isinstance(summary_raw, dict) else {"summary": str(summary_raw)}
+                asyncio.create_task(
+                    index_session_and_update_brief(
+                        clinic_id=self.clinic_id,
+                        patient_pin=self.patient_pin,
+                        session_id=self.session_id,
+                        summary_dict=summary_for_kb,
+                        transcript_s3_key=self.transcript_blob_name,
+                        s3_client=self.s3_client,
+                    )
+                )
+
             # -- OLD Azure Table upsert --
             # table_client = self.table_service_client.get_table_client(settings.azure_table_name)
             # await table_client.upsert_entity({...}, mode="merge")

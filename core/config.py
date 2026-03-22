@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     # JWT_ALGORITHM: str
     # JWT_ISSUER: str
 
+    # -- Knowledge Base --
+    kb_dynamodb_table_name: str = "clientKB"
+    kb_brief_recent_sessions: int = 10  # how many sessions the brief LLM sees
+
     ENABLE_AUDIT_LOGGING: Optional[bool] = True
     worker_memory_debug: Optional[bool] = False
     enable_vad: Optional[bool] = False

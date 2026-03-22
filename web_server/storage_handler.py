@@ -24,6 +24,7 @@ from typing import Optional, Dict, List
 from core.config import get_settings
 from core.aws_helpers import dynamo_upsert
 from core.services import get_summary_from_text
+from core.kb_service import index_session_and_update_brief
 from openai import AsyncOpenAI
 
 settings = get_settings()
@@ -452,6 +453,18 @@ async def recover_session_from_audio(session_id: str, dynamodb_table, s3_client)
             "ErrorCode": "",
             "ErrorMessage": "",
         })
+
+        # -- Knowledge Base: index recovered session + update progressive brief --
+        asyncio.create_task(
+            index_session_and_update_brief(
+                clinic_id=clinic_id,
+                patient_pin=patient_pin,
+                session_id=session_id,
+                summary_dict=summary if isinstance(summary, dict) else {"summary": str(summary)},
+                transcript_s3_key=transcript_blob_path,
+                s3_client=s3_client,
+            )
+        )
 
         logger.info(f"[{session_id}] Recovery complete.")
         return {"status": "recovered", "transcript_blob": transcript_blob_path, "summary": summary}

@@ -38,6 +38,7 @@ from . import storage_handler
 from . import upload_handler
 from . import websocket_manager
 from .websocket_manager import send_error_to_websocket
+from .kb_router import router as kb_router
 
 settings = get_settings()
 client = AsyncOpenAI(api_key=settings.openai_api_key)
@@ -66,8 +67,11 @@ async def lifespan(app: FastAPI):
             # ARQ Redis pool
             arq_pool = await create_pool(RedisSettings.from_dsn(settings.redis_url))
 
+            kb_table = await dynamodb.Table(settings.kb_dynamodb_table_name)
+
             app.state.s3 = s3
             app.state.dynamodb_table = table
+            app.state.dynamodb_kb_table = kb_table
             app.state.arq_pool = arq_pool
 
             logging.info("AWS services connected (S3, DynamoDB, Redis/ARQ).")
@@ -91,6 +95,8 @@ app.add_middleware(
 # -- AWS: optional API key middleware (replaces JWT middleware) --
 app.add_middleware(APIKeyMiddleware)
 # -- OLD: app.add_middleware(JWTMiddleware) --
+
+app.include_router(kb_router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
