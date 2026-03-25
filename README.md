@@ -1,5 +1,7 @@
 # How to run the app
 
+> For AWS deployment see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
 ## Prerequisites
 - [uv](https://docs.astral.sh/uv/) — `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - Docker + Docker Compose
