@@ -31,3 +31,9 @@ __queuestorage__
 .vscode/
 app.log
 text.txt
+
+# OpenTofu / Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
